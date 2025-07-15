@@ -37,7 +37,7 @@ class FormFiller:
             'permanent_country': 'Permanent Address Country',
             'permanent_province': 'Permanent Address Province',
             'permanent_district': 'Permanent Address District',
-            'permanent_municipality': 'Permanent Address Municipality',
+            'permanent_municipality': 'Permanent municipality',
             'permanent_ward_no': 'Permanent Ward Number',
             'permanent_tole': 'Permanent Address Tole',
             'permanent_telephone': 'Permanent Telephone Number',
