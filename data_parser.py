@@ -46,10 +46,15 @@ class DataParser:
                 r'PAN[:\s]*([A-Z0-9]{9,12})(?!\s*(?:ies|No|Number))',
                 r':yfoL n]vf g+=[:\s]*([A-Z0-9]{9,12})'
             ],
+            # 'issue_district': [
+            #     r'Issue\s+District\s+([A-Za-z\s]+?)(?=\s*(?:Issue Date|Beneficiary|$|\n))',
+            #     r'hf/L lhNnf[:\s]*([A-Za-z\s]+)'
+            # ],
             'issue_district': [
-                r'Issue\s+District\s+([A-Za-z\s]+?)(?=\s*(?:Issue Date|Beneficiary|$|\n))',
-                r'hf/L lhNnf[:\s]*([A-Za-z\s]+)'
+                r'Citizenship\s+Details[\s\S]{0,100}?Issue\s+District[:\s]*([A-Za-z\s]+?)(?=\s*(?:Issue\s+Date|Beneficiary|$|\n))',
+                r'Issue\s+District[:\s]*([A-Za-z\s]+?)(?=\s*(?:Issue\s+Date|Beneficiary|$|\n))'
             ],
+
             'issue_date': [
                 r'Issue Date\s+(\d{4}-\d{2}-\d{2})',
                 r'hf/L ldlt[:\s]*(\d{4}-\d{2}-\d{2})'
@@ -68,10 +73,15 @@ class DataParser:
                     r'Current\s+Address[:\s]*.*?Province[:\s]*([A-Za-z0-9_\s]+?)(?=\s*(?:District|Municipality|$|\n))',
                     r'(?:^|\n)(?!.*Permanent)(?!.*Temporary).*?Province[:\s]+([A-Za-z0-9_\s]+?)(?=\s*(?:District|Municipality|$|\n))',
                 ],
+                # 'district': [
+                #     r'Current\s+Address[:\s]*.*?District[:\s]*([A-Za-z\s]+?)(?=\s*(?:Municipality|Ward|Tole|$|\n))',
+                #     r'(?:^|\n)(?!.*Permanent)(?!.*Temporary).*?District[:\s]+([A-Za-z\s]+?)(?=\s*(?:Municipality|Ward|Tole|$|\n))',
+                # ],
                 'district': [
-                    r'Current\s+Address[:\s]*.*?District[:\s]*([A-Za-z\s]+?)(?=\s*(?:Municipality|Ward|Tole|$|\n))',
-                    r'(?:^|\n)(?!.*Permanent)(?!.*Temporary).*?District[:\s]+([A-Za-z\s]+?)(?=\s*(?:Municipality|Ward|Tole|$|\n))',
+                    r'Current\s+Address[\s\S]{0,100}?District[:\s]*([A-Za-z\s]+?)(?=\s*(?:Municipality|Ward|Tole|$|\n))',
+                    r'\bCurrent\s+District[:\s]*([A-Za-z\s]+?)(?=\s*(?:Municipality|Ward|Tole|$|\n))'
                 ],
+
                 'municipality': [
                     r'Current\s+Address[:\s]*.*?Municipality[:\s]*([A-Za-z\s]+?)(?=\s*(?:Ward|Tole|$|\n))',
                     r'(?:^|\n)(?!.*Permanent)(?!.*Temporary).*?Municipality[:\s]+([A-Za-z\s]+?)(?=\s*(?:Ward|Tole|$|\n))',
@@ -242,20 +252,91 @@ class DataParser:
                 ]
             },
             'occupation': {
-                'occupation': [
-                    r'Details of Occupation\s+Occupation\s+([A-Za-z]+)',
-                    r'Occupation\s+([A-Za-z]+)(?=\s*(?:Types|Organization|Name|$|\n))',
-                    r'k]zf[:\s]+([A-Za-z]+)(?=\s*(?:k|sf/|;+:yf|$|\n))'
+                # 'occupation': [
+                #     r'Details of Occupation\s+Occupation\s+([A-Za-z]+)',
+                #     r'Occupation\s+([A-Za-z]+)(?=\s*(?:Types|Organization|Name|$|\n))',
+                #     r'k]zf[:\s]+([A-Za-z]+)(?=\s*(?:k|sf/|;+:yf|$|\n))'
+                # ],
+                 'occupation': [
+                        r'Occupation[\s\n]*([A-Za-z/ ]{3,50})(?=\s*(?:Types|Organization|Name|$|\n))',
+                        r'Details of Occupation[\s\n]*Occupation[\s\n]*([A-Za-z/ ]{3,50})',
+                        r'k]zf[:\s\n]*([A-Za-z/ ]{3,50})(?=\s*(?:k|sf/|;+:yf|$|\n))'
+                    ],
+                #occupation organization name
+            'organization_name': [
+                    r"Organization'?s?[\s\n]*Name[\s\n]*((?:[A-Z0-9 ,\-&]{2,}(?:\n| ){0,2}){1,5})"
                 ],
                 'organization': [
                     r'Organization\'s Name[:\s]+([A-Za-z\s\-]+?)(?=\s*(?:Address|Designation|$|\n))',
                     r';+:yfsf] gfd[:\s]+([A-Za-z\s\-]+?)(?=\s*(?:7]ufgf|kb|$|\n))'
                 ],
+                # 'designation': [
+                #     r'Designation[:\s]+([A-Za-z\s\-]+?)(?=\s*(?:ID No|Employee|$|\n))',
+                #     r'kb[:\s]+([A-Za-z\s\-]+?)(?=\s*(?:sd{rf/L|k|lr/rokq|$|\n))'
+                # ],
+       
                 'designation': [
-                    r'Designation[:\s]+([A-Za-z\s\-]+?)(?=\s*(?:ID No|Employee|$|\n))',
-                    r'kb[:\s]+([A-Za-z\s\-]+?)(?=\s*(?:sd{rf/L|k|lr/rokq|$|\n))'
+                    r'Designation[\s]+([A-Za-z\s\-]{2,50})(?=\s*(ID No|Employee|Number|$|\n))',
+                    r'kb[\s]+([A-Za-z\s\-]{2,50})(?=\s*(sd{rf/L|k|lr/rokq|$|\n))'
+                ],
+
+                 'sector': [
+                    r'Occupation\s*[:\s]*([^\n]+)'
+                ],
+             'address': [
+                    r'Address[\s\n]*([A-Z0-9 ,\-]{3,50})'
+                ],
+
+                'financial_details': [
+                    r'Income Limit\(Annual Details\)\s*([^\n]+)'
+                ],
+                # 'investment_involvement': [
+                #     r'Involvement in Investment companies which were established for securities trading\s*([^\n]+)'
+                # ]
+                
+                'investment_involvement': [
+                    r'Involvement in Investment companies which were established for securities trading\s*(Yes|No)'
+                ],
+                'business_type': [
+                    r'Types of[\s\n]*Business[\s\n]*([A-Za-z ]+)',
+                    r'Service Oriented[\s\n]*([A-Za-z ]+)',
+                    r'Manufacturing[\s\n]*([A-Za-z ]+)',
+                    r'Others[\s\n]*([A-Za-z ]+)'
+                ],
+
+            },
+            'money_laundering': {
+                'politician_or_high_ranking_person': [
+                    r'Are You A Politician Or A High-Ranking Person\?\s*(Yes|No)'
+                ],
+                'related_to_politician_or_high_ranking_official': [
+                    r'Are You Related To A Politician Or A High-Ranking Official\?\s*(Yes|No)'
+                ],
+                'have_a_beneficiary': [
+                    r'Do You Have A Beneficiary\?\s*(Yes|No)'
+                ],
+                'convicted_of_felony': [
+                    r'Have You Been Convicted Of A Felony In The Past\?\s*(Yes|No)'
                 ]
             },
+            'guardian_details': {
+                'guardian_name': [
+                    r"Name/Surname[\s:]+([A-Z\s]{3,20})(?=\s+Relationship|$)"
+                ],
+                'guardian_relationship': [
+                    r"Relationship with[\s]+applicant[\s:]+([A-Z\s]{3,15})(?=\s+Correspondence|Address|$)"
+                ]
+            },
+            'minor_contact': {
+                'minor_telephone': [
+                    r'Telephone\s+No[:\s]+([0-9]{6,15})'
+                ],
+                'minor_mobile': [
+                    r'Mobile\s+No[:\s]+([0-9]{6,15})'
+                ]
+            },
+
+
             'temporary_address': {
                 'country': [
                     r'Temporary Address[:\s]*.*?Country[:\s]*([A-Za-z\s]+)',
@@ -337,7 +418,14 @@ class DataParser:
             
             # Extract occupation details
             parsed_data.update(self._extract_occupation_info(text))
-            
+
+            # Extract guardian details 
+            parsed_data.update(self._extract_guardian_info(text))
+
+            # Extract minor contact details
+            parsed_data.update(self._extract_minor_contact_info(text))
+
+
             # Extract temporary address
             parsed_data.update(self._extract_temporary_address_info(text))
             
@@ -347,6 +435,9 @@ class DataParser:
              # Extract family member information with validation
             family_data = self._extract_family_info(text)
             parsed_data.update(self._validate_family_names(family_data))
+
+            # Extract money laundering questions
+            parsed_data.update(self._extract_money_laundering_info(text))
             
             return parsed_data
             
@@ -550,17 +641,42 @@ class DataParser:
 
         return data
     
+    # def _extract_family_info(self, text: str) -> Dict:
+    #     """Extract family member information"""
+    #     data = {}
+        
+    #     for field, patterns in self.patterns['family_members'].items():
+    #         value = self._extract_field(text, patterns)
+    #         if value and value.strip() and value.strip() != '-':
+    #             # Ensure family member names are fully capitalized
+    #             data[field] = value.strip().upper()
+        
+    #     return data
+
     def _extract_family_info(self, text: str) -> Dict:
-        """Extract family member information"""
+        """Extract family member information with improved accuracy"""
         data = {}
-        
-        for field, patterns in self.patterns['family_members'].items():
-            value = self._extract_field(text, patterns)
-            if value and value.strip() and value.strip() != '-':
-                # Ensure family member names are fully capitalized
-                data[field] = value.strip().upper()
-        
+
+        members = [
+            'grandfather_name', 'father_name', 'mother_name',
+            'spouse_name', 'son_name', 'daughter_name',
+            'daughter_in_law_name', 'father_in_law_name', 'mother_in_law_name'
+        ]
+
+        for member in members:
+            value = self._extract_field(text, self.patterns['family_members'][member])
+            if value:
+                cleaned = value.strip().upper()
+                # Reject values that are just field labels
+                label_words = member.replace('_name', '').replace('_', ' ').upper()
+                if cleaned == label_words or cleaned in ['DAUGHTER', 'SON', 'MOTHER', 'FATHER', 'MONEY LAUNDERING']:
+                    continue
+                if cleaned and cleaned != '-':
+                    data[member] = cleaned
+
         return data
+
+
     
     def _extract_bank_info(self, text: str) -> Dict:
         """Extract bank account information"""
@@ -596,17 +712,100 @@ class DataParser:
     
         return family_data
 
+    # def _extract_occupation_info(self, text: str) -> Dict:
+    #     """Extract occupation information"""
+    #     data = {}
+        
+    #     for field, patterns in self.patterns['occupation'].items():
+    #         value = self._extract_field(text, patterns)
+    #         if value and value.strip() and value.strip() != '-':
+    #             data[field] = value.strip()
+        
+    #     return data
+    
+    # def _extract_occupation_info(self, text: str) -> Dict:
+    #     """Extract occupation information"""
+    #     data = {}
+        
+    #     for field, patterns in self.patterns['occupation'].items():
+    #             value = self._extract_field(text, patterns)
+
+    #             if value:
+    #                 # Clean extraneous label spillover
+    #                 value = re.split(r'\b(Address|Designation|ID No)\b', value)[0]
+    #                 value = re.sub(r'\s+', ' ', value.strip())
+            
+    #             if value and value != '-':
+    #                 lower_val = value.lower()
+    #                 # Reject known layout artifacts
+    #                 if lower_val in ['permanent', 'current', 'temporary', 'occupation', 'address']:
+    #                     continue
+    #                 # Reject exact label repetition
+    #                 field_label = field.replace('_name', '').replace('_', ' ').strip().lower()
+    #                 if lower_val == field_label:
+    #                     continue
+    #                 data[field] = value  
+                    
+    #     return data
+    
     def _extract_occupation_info(self, text: str) -> Dict:
         """Extract occupation information"""
         data = {}
-        
+
         for field, patterns in self.patterns['occupation'].items():
             value = self._extract_field(text, patterns)
-            if value and value.strip() and value.strip() != '-':
-                data[field] = value.strip()
-        
+
+            if value:
+                # Clean extraneous label spillover
+                value = re.split(r'\b(Address|Designation|ID No)\b', value)[0]
+                value = re.sub(r'\s+', ' ', value.strip())
+
+            # if value and value != '-':
+            #     # Skip junk label
+            #     if field == 'occupation' and value.lower() == 'occupation':
+            #         continue
+            #     data[field] = value
+                
+            if value and value != '-':
+                lower_val = value.lower()
+                # Reject known layout artifacts
+                if lower_val in ['permanent', 'current', 'temporary', 'occupation', 'address']:
+                    continue
+                # Reject exact label repetition
+                field_label = field.replace('_name', '').replace('_', ' ').strip().lower()
+                if lower_val == field_label:
+                    continue
+                data[field] = value    
+
+        # Fallback if occupation is missing
+        if 'occupation' not in data and 'sector' in data:
+            data['occupation'] = data['sector']
+
         return data
-    
+  
+    def _extract_guardian_info(self, text: str) -> Dict:
+        """Extract guardian information for minor applicants"""
+        data = {}
+
+        for field, patterns in self.patterns['guardian_details'].items():
+            value = self._extract_field(text, patterns)
+            if value and value.strip() and value.strip() != '-':
+                data[field] = re.sub(r'\s+', ' ', value.strip())
+
+        return data
+    def _extract_minor_contact_info(self, text: str) -> Dict:
+        """Extract minor's contact info"""
+        data = {}
+
+        for field, patterns in self.patterns['minor_contact'].items():
+            value = self._extract_field(text, patterns)
+            if value and value.strip() and value.strip() != '-':
+                data[field] = re.sub(r'\s+', '', value.strip())  # remove inner spaces
+
+        return data
+
+
+
     def _extract_temporary_address_info(self, text: str) -> Dict:
         """Extract temporary address information"""
         data = {}
@@ -621,6 +820,15 @@ class DataParser:
                 data[f'temporary_{field}'] = clean_value
         
         return data
+    
+    def _extract_money_laundering_info(self, text: str) -> Dict:
+            """Extract money laundering information"""
+            data = {}
+            for field, patterns in self.patterns['money_laundering'].items():
+                value = self._extract_field(text, patterns)
+                if value and value.strip() and value.strip() != '-':
+                  data[field] = value.strip()
+            return data 
     
     def _extract_financial_info(self, text: str) -> Dict:
         """Extract financial information"""
