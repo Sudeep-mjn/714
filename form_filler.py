@@ -1,3 +1,4 @@
+import re
 import PyPDF2
 import io
 import fitz  # PyMuPDF for better form handling
@@ -43,17 +44,6 @@ class FormFiller:
             'permanent_telephone': 'Permanent Telephone Number',
             'permanent_block_no': 'Permanent Block Number',
 
-            # Temporary Address
-            # 'temporary_country': 'Temporary Address Country',
-            # 'temporary_province': 'Temporary Address Province',
-            # 'temporary_district': 'Temporary Address District',
-            # 'temporary_municipality': 'Temporary Address Municipality',
-            # 'temporary_ward_no': 'Temporary Ward Number',
-            # 'temporary_tole': 'Temporary Address Tole',
-            # 'temporary_telephone': 'Temporary Telephone Number',
-            # 'temporary_mobile': 'Temporary Mobile Number',
-            # 'temporary_email': 'Temporary Email Address',
-
             # Financial Details
             'income_limit': 'Financial Details',
 
@@ -73,22 +63,54 @@ class FormFiller:
             'bank_name': 'Bank Name and Address',
 
             # Occupation
-            'organization': "Organization's Name",
-            'designation': 'Designation'
+            'organization_name': "Organization's Name",
+            'designation': 'Designation',
+
+            'occupation': {
+                'business_type': 'TypeOfBusiness'
+            },
+
+            #guardian details
+            'guardian_name': "Name/Surename",     #field needs to be updated...........................HERE.......................................
+            'guardian_relationship': "Relationship With Applicant",   #..........................Here.... (pdf name field)..........................
+            
+            #Minor details
+            'minor_telephone': " ",  #___________fill pdf naming field ______________________
+            'minor_mobile': " ",   #___________fill pdf naming field ______________________
+
         }
 
         # Gender checkbox mappings
         self.gender_mapping = {'male': 'MaleCheck', 'female': 'FemaleCheck', 'other':'OthersCheck'}
 
         # Occupation checkbox mappings
+        self.business_type_mapping = {'manufacturing': 'Manufacturing', 'service oriented': 'Check', 'others':'Check Box12'}
+
+        # Occupation checkbox mappings
         self.occupation_mapping = {
             'agriculture': 'Agriculture',
             'business': 'Businessperson',
-            'service': 'Govt',  # Government service
+            'service': 'Govt',  
             'student': 'Student',
             'retired': 'Retired',
             'housewife': 'House Wife',
-            'foreign': 'Foreign Employment'
+            'foreign': 'Foreign Employment',
+            'public': 'Public/Private Sector',
+            'private': 'Public/Private Sector',
+            'ngo': 'NGO/INGO',
+            'ingo': 'NGO/INGO',
+            'expert': 'Expert',
+            'others': 'Other Occupation',
+            'self_employed': 'Self Employed',
+            
+        }
+
+         # Money laundering checkbox mappings
+        self.money_laundering_mapping = {
+            'politician_or_high_ranking_person': 'PoliticianOrHighRankingPersonCheck',
+            'related_to_politician_or_high_ranking_official': 'RelatedToPoliticianOrHighRankingOfficialCheck',
+            'have_a_beneficiary': 'HaveBeneficiaryCheck',
+            'convicted_of_felony': 'ConvictedOfFelonyCheck'
         }
 
         # Bank account type mappings
@@ -179,13 +201,7 @@ class FormFiller:
 
                                 # Handle different field types
                                 if widget.field_type == fitz.PDF_WIDGET_TYPE_TEXT:
-                                    # Apply improved text formatting for names
-                                    formatted_value = self._format_text_for_field(value, field_name, widget)
-                                    widget.field_value = formatted_value
-                                    
-                                    # Apply font size optimization for name fields
-                                    self._optimize_font_size(widget, field_name, formatted_value)
-                                    
+                                    widget.field_value = value
                                     widget.update()
                                 elif widget.field_type == fitz.PDF_WIDGET_TYPE_CHECKBOX:
                                     # For checkboxes, set based on Yes/On values
@@ -278,11 +294,41 @@ class FormFiller:
         field_updates = {}
 
         # Handle regular text fields
+        # for data_key, pdf_field_name in self.field_mapping.items():
+        #     if data_key in parsed_data and parsed_data[data_key]:
+        #         value = str(parsed_data[data_key]).strip()
+        #         if value and value != '-':
+        #             field_updates[pdf_field_name] = value
+                # Handle regular and nested text fields
         for data_key, pdf_field_name in self.field_mapping.items():
-            if data_key in parsed_data and parsed_data[data_key]:
-                value = str(parsed_data[data_key]).strip()
-                if value and value != '-':
-                    field_updates[pdf_field_name] = value
+            if isinstance(pdf_field_name, dict):
+                # Nested mapping (e.g., occupation -> business_type)
+                for sub_key, sub_field_name in pdf_field_name.items():
+                    if sub_key in parsed_data:
+                        value = str(parsed_data[sub_key]).strip()
+                        if value and value != '-':
+                            field_updates[sub_field_name] = value
+            else:
+                if data_key in parsed_data:
+                    value = str(parsed_data[data_key]).strip()
+                    if value and value != '-':
+                        field_updates[pdf_field_name] = value
+                            # Handle occupation checkboxes
+            if 'occupation' in parsed_data:
+                occupation = str(parsed_data.get('occupation', '')).lower()
+                occupation = re.sub(r'\s+', ' ', occupation.strip())
+
+                # Fallback if occupation is just a label
+                if occupation in ['occupation', ''] and 'sector' in parsed_data:
+                    sector = str(parsed_data['sector']).lower()
+                    occupation = re.sub(r'\s+', ' ', sector.strip())
+
+                # Match using occupation_mapping
+                for keyword, field in self.occupation_mapping.items():
+                    if keyword in occupation:
+                        field_updates[field] = 'Yes'
+                        break
+
 
         # Handle gender checkboxes
         if 'gender' in parsed_data:
@@ -303,14 +349,71 @@ class FormFiller:
             elif 'current' in account_type:
                 field_updates['Current Account'] = 'Yes'
                 field_updates['Saving Account'] = 'Off'
+        
+        
+          # Handle income limit checkboxes
+        if 'income_limit' in parsed_data:
+            income_limit = str(parsed_data['income_limit']).lower()
+            if 'upto 5,00,000' in income_limit:
+                field_updates['Upto 5,00,000'] = 'Yes'
+                field_updates['From Rs. 5,00,001 to Rs. 10,00,000'] = 'Off'
+                field_updates['Above Rs. 10,00,000'] = 'Off'
+            elif 'from rs. 5,00,001 to rs. 10,00,000' in income_limit:
+                field_updates['Upto 5,00,000'] = 'Off'
+                field_updates['From Rs. 5,00,001 to Rs. 10,00,000'] = 'Yes'
+                field_updates['Above Rs. 10,00,000'] = 'Off'
+            elif 'above rs. 10,00,000' in income_limit:
+                field_updates['Upto 5,00,000'] = 'Off'
+                field_updates['From Rs. 5,00,001 to Rs. 10,00,000'] = 'Off'
+                field_updates['Above Rs. 10,00,000'] = 'Yes'
+
 
         # Handle occupation checkboxes
-        if 'occupation' in parsed_data:
-            occupation = str(parsed_data['occupation']).lower()
+        # if 'occupation' in parsed_data:
+        #     occupation = str(parsed_data['occupation']).lower()
+        #     if 'agriculture' in occupation:
+        #         field_updates['Agriculture'] = 'Yes'
+        #     elif 'business' in occupation:
+        #         field_updates['Businessperson'] = 'Yes'
+        #     elif 'expert' in occupation:
+        #         field_updates['Expert'] = 'Yes'
+        #     elif 'others' in occupation:
+        #         field_updates['Other Occupation'] = 'Yes'
+        #     elif 'service' in occupation or 'govt' in occupation:
+        #         field_updates['Govt'] = 'Yes'
+        #     elif 'student' in occupation:
+        #         field_updates['Student'] = 'Yes'
+        #     elif 'retired' in occupation:
+        #         field_updates['Retired'] = 'Yes'
+        #     elif 'house' in occupation or 'wife' in occupation:
+        #         field_updates['House Wife'] = 'Yes'
+        #     elif 'foreign' in occupation or 'employment' in occupation:
+        #         field_updates['Foreign Employment'] = 'Yes'
+        #     elif 'public' in occupation or 'private' in occupation:
+        #         field_updates['Public/Private Sector'] = 'Yes'
+        #     elif 'ngo' in occupation or 'ingo' in occupation:
+        #         field_updates['NGO/INGO'] = 'Yes'
+                
+            # occupation = str(parsed_data.get('occupation', '')).lower()
+            # # fallback if occupation is just a label
+            # if occupation in ['occupation', ''] and 'sector' in parsed_data:
+            #     occupation = str(parsed_data['sector']).lower()
+            occupation = str(parsed_data.get('occupation', '')).lower()
+            occupation = re.sub(r'\s+', ' ', occupation.strip())  # normalize whitespace
+
+            # fallback if occupation is meaningless
+            if occupation in ['occupation', ''] and 'sector' in parsed_data:
+                sector = str(parsed_data['sector']).lower()
+                occupation = re.sub(r'\s+', ' ', sector.strip())    
+
             if 'agriculture' in occupation:
                 field_updates['Agriculture'] = 'Yes'
             elif 'business' in occupation:
                 field_updates['Businessperson'] = 'Yes'
+            elif 'expert' in occupation:
+                field_updates['Expert'] = 'Yes'
+            elif 'others' in occupation:
+                field_updates['Other Occupation'] = 'Yes'
             elif 'service' in occupation or 'govt' in occupation:
                 field_updates['Govt'] = 'Yes'
             elif 'student' in occupation:
@@ -321,6 +424,62 @@ class FormFiller:
                 field_updates['House Wife'] = 'Yes'
             elif 'foreign' in occupation or 'employment' in occupation:
                 field_updates['Foreign Employment'] = 'Yes'
+            elif 'public' in occupation or 'private' in occupation:
+                field_updates['Public/Private Sector'] = 'Yes'
+            elif 'ngo' in occupation or 'ingo' in occupation:
+                field_updates['NGO/INGO'] = 'Yes'
+
+                
+         # Handle money laundering checkboxes
+            if 'politician_or_high_ranking_person' in parsed_data:
+                if parsed_data['politician_or_high_ranking_person'] == 'Yes':
+                    field_updates['Rajniti/padh yes'] = 'Yes'
+                    field_updates['Rajniti/padh no'] = 'Off'
+                else:
+                    field_updates['Rajniti/padh yes'] = 'Off'
+                    field_updates['Rajniti/padh no'] = 'Yes'
+
+            if 'related_to_politician_or_high_ranking_official' in parsed_data:
+                if parsed_data['related_to_politician_or_high_ranking_official'] == 'Yes':
+                    field_updates['Rajniti/padh sambandha yes'] = 'Yes'
+                    field_updates['Rajniti/padh sambandha no'] = 'Off'
+                else:
+                    field_updates['Rajniti/padh sambandha yes'] = 'Off'
+                    field_updates['Rajniti/padh sambandha no'] = 'Yes'
+
+            if 'have_a_beneficiary' in parsed_data:
+                if parsed_data['have_a_beneficiary'] == 'Yes':
+                    field_updates['hitadhikari yes'] = 'Yes'
+                    field_updates['hitadhikari no'] = 'Off'
+                else:
+                    field_updates['hitadhikari yes'] = 'Off'
+                    field_updates['hitadhikari no'] = 'Yes'
+
+            if 'convicted_of_felony' in parsed_data:
+                if parsed_data['convicted_of_felony'] == 'Yes':
+                    field_updates['Dosh yes'] = 'Yes'
+                    field_updates['Dosh no'] = 'Off'
+                else:
+                    field_updates['Dosh yes'] = 'Off'
+                    field_updates['Dosh no'] = 'Yes'
+ 
+          # Handle business type checkboxes
+        # if 'business_type' in parsed_data:
+        #     business_type_value = parsed_data['business_type'].strip().lower()
+        #     for business_key, business_value in self.business_type_mapping.items():
+        #         if business_type_value == business_key:
+        #             field_updates[business_value] = 'Yes'
+        #             break
+            
+            # Handle business type checkboxes like Yes/Off
+        if 'business_type' in parsed_data:
+            business_type_value = parsed_data['business_type'].strip().lower()
+            for business_key, field_name in self.business_type_mapping.items():
+                if business_type_value == business_key:
+                    # Set the matched one to 'Yes', others to 'Off'
+                    for _, other_field in self.business_type_mapping.items():
+                        field_updates[other_field] = 'Yes' if field_name == other_field else 'Off'
+                    break
 
         return field_updates
 
@@ -475,66 +634,6 @@ class FormFiller:
         
         # For all fields, return cleaned value without any character spacing
         return cleaned_value
-
-    def _optimize_font_size(self, widget, field_name: str, text_value: str):
-        """
-        Optimize font size for better text display in form fields
-        
-        Args:
-            widget: PyMuPDF widget object
-            field_name: Name of the form field
-            text_value: Text value being filled
-        """
-        try:
-            # Check if this is a field that needs character-per-box formatting
-            is_character_box_field = any(field in field_name.lower() for field in [
-                'name in block letter', 'father', 'mother', 'grandfather', 
-                'spouse', 'son', 'daughter', 'beneficiary id number'
-            ])
-            
-            # Check if this is a name field that might benefit from font optimization
-            is_name_field = any(keyword in field_name.lower() for keyword in 
-                               ['name', 'father', 'mother', 'spouse', 'son', 'daughter'])
-            
-            if is_character_box_field and text_value:
-                # For character box fields, use smaller font to fit individual boxes
-                field_width = widget.rect.width if widget.rect else 300
-                char_count = len(text_value.replace(' ', ''))  # Count without spaces
-                
-                if char_count > 15:
-                    # Very long text - use very small font
-                    widget.text_fontsize = 7.0
-                elif char_count > 10:
-                    # Long text - use small font
-                    widget.text_fontsize = 8.0
-                else:
-                    # Normal length - use medium font
-                    widget.text_fontsize = 9.0
-                
-                # Ensure text color is black for visibility
-                widget.text_color = (0, 0, 0)  # RGB black
-                
-            elif is_name_field and text_value and len(text_value) > 10:
-                # For other name fields, use standard font optimization
-                field_width = widget.rect.width if widget.rect else 300
-                char_density = len(text_value) / field_width if field_width > 0 else 0
-                
-                if char_density > 0.04:
-                    # High density - use smaller font
-                    widget.text_fontsize = 9.0
-                elif char_density > 0.035:
-                    # Medium density - use medium font
-                    widget.text_fontsize = 10.0
-                else:
-                    # Low density - use standard font
-                    widget.text_fontsize = 11.0
-                
-                # Ensure text color is black for visibility
-                widget.text_color = (0, 0, 0)  # RGB black
-                
-        except Exception:
-            # If font optimization fails, continue without it
-            pass
 
     def get_field_mapping_info(self) -> Dict:
         """Return information about field mappings for debugging"""
