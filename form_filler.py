@@ -67,16 +67,16 @@ class FormFiller:
             'designation': 'Designation',
 
             'occupation': {
-                'business_type': 'TypeOfBusiness'
+                # 'business_type': 'TypeOfBusiness'
             },
 
             #guardian details
-            'guardian_name': "Name/Surename",     #field needs to be updated...........................HERE.......................................
-            'guardian_relationship': "Relationship With Applicant",   #..........................Here.... (pdf name field)..........................
+            'guardian_name': "NameSurname  In Block letter",     
+            'guardian_relationship': "Relationship with applicant", 
             
             #Minor details
-            'minor_telephone': " ",  #___________fill pdf naming field ______________________
-            'minor_mobile': " ",   #___________fill pdf naming field ______________________
+            'minor_telephone': "Minor Telephone No",  
+            'minor_mobile': "Minor Mobile No",   
 
         }
 
@@ -293,12 +293,6 @@ class FormFiller:
         """Prepare field updates based on mapping"""
         field_updates = {}
 
-        # Handle regular text fields
-        # for data_key, pdf_field_name in self.field_mapping.items():
-        #     if data_key in parsed_data and parsed_data[data_key]:
-        #         value = str(parsed_data[data_key]).strip()
-        #         if value and value != '-':
-        #             field_updates[pdf_field_name] = value
                 # Handle regular and nested text fields
         for data_key, pdf_field_name in self.field_mapping.items():
             if isinstance(pdf_field_name, dict):
@@ -328,6 +322,14 @@ class FormFiller:
                     if keyword in occupation:
                         field_updates[field] = 'Yes'
                         break
+         # ✅ Handle investment involvement checkbox
+        if 'investment_involvement' in parsed_data:
+            val = parsed_data['investment_involvement'].strip().lower()
+            field_name = 'Involvement in Investment companies which were established for securities trading'
+            if val == 'yes':
+                field_updates[field_name] = 'Yes'
+            elif val == 'no':
+                field_updates[field_name] = 'Off'
 
 
         # Handle gender checkboxes
@@ -463,14 +465,7 @@ class FormFiller:
                     field_updates['Dosh yes'] = 'Off'
                     field_updates['Dosh no'] = 'Yes'
  
-          # Handle business type checkboxes
-        # if 'business_type' in parsed_data:
-        #     business_type_value = parsed_data['business_type'].strip().lower()
-        #     for business_key, business_value in self.business_type_mapping.items():
-        #         if business_type_value == business_key:
-        #             field_updates[business_value] = 'Yes'
-        #             break
-            
+   
             # Handle business type checkboxes like Yes/Off
         if 'business_type' in parsed_data:
             business_type_value = parsed_data['business_type'].strip().lower()

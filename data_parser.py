@@ -263,7 +263,7 @@ class DataParser:
                         r'k]zf[:\s\n]*([A-Za-z/ ]{3,50})(?=\s*(?:k|sf/|;+:yf|$|\n))'
                     ],
                 #occupation organization name
-            'organization_name': [
+             'organization_name': [
                     r"Organization'?s?[\s\n]*Name[\s\n]*((?:[A-Z0-9 ,\-&]{2,}(?:\n| ){0,2}){1,5})"
                 ],
                 'organization': [
@@ -294,15 +294,17 @@ class DataParser:
                 #     r'Involvement in Investment companies which were established for securities trading\s*([^\n]+)'
                 # ]
                 
-                'investment_involvement': [
-                    r'Involvement in Investment companies which were established for securities trading\s*(Yes|No)'
+               'investment_involvement': [
+                    r'Involvement\s+in\s+Investment\s+companies\s+which\s+were\s+established\s+for\s+securities\s+trading\s*[:\-]?\s*(Yes|No)',
+                    r'Involvement.*?securities\s+trading\s*[:\-]?\s*(Yes|No)'
                 ],
-                'business_type': [
-                    r'Types of[\s\n]*Business[\s\n]*([A-Za-z ]+)',
-                    r'Service Oriented[\s\n]*([A-Za-z ]+)',
-                    r'Manufacturing[\s\n]*([A-Za-z ]+)',
-                    r'Others[\s\n]*([A-Za-z ]+)'
-                ],
+
+                # 'business_type': [
+                #     r'Types of[\s\n]*Business[\s\n]*([A-Za-z ]+)',
+                #     r'Service Oriented[\s\n]*([A-Za-z ]+)',
+                #     r'Manufacturing[\s\n]*([A-Za-z ]+)',
+                #     r'Others[\s\n]*([A-Za-z ]+)'
+                # ],
 
             },
             'money_laundering': {
@@ -641,18 +643,6 @@ class DataParser:
 
         return data
     
-    # def _extract_family_info(self, text: str) -> Dict:
-    #     """Extract family member information"""
-    #     data = {}
-        
-    #     for field, patterns in self.patterns['family_members'].items():
-    #         value = self._extract_field(text, patterns)
-    #         if value and value.strip() and value.strip() != '-':
-    #             # Ensure family member names are fully capitalized
-    #             data[field] = value.strip().upper()
-        
-    #     return data
-
     def _extract_family_info(self, text: str) -> Dict:
         """Extract family member information with improved accuracy"""
         data = {}
@@ -712,41 +702,7 @@ class DataParser:
     
         return family_data
 
-    # def _extract_occupation_info(self, text: str) -> Dict:
-    #     """Extract occupation information"""
-    #     data = {}
-        
-    #     for field, patterns in self.patterns['occupation'].items():
-    #         value = self._extract_field(text, patterns)
-    #         if value and value.strip() and value.strip() != '-':
-    #             data[field] = value.strip()
-        
-    #     return data
-    
-    # def _extract_occupation_info(self, text: str) -> Dict:
-    #     """Extract occupation information"""
-    #     data = {}
-        
-    #     for field, patterns in self.patterns['occupation'].items():
-    #             value = self._extract_field(text, patterns)
-
-    #             if value:
-    #                 # Clean extraneous label spillover
-    #                 value = re.split(r'\b(Address|Designation|ID No)\b', value)[0]
-    #                 value = re.sub(r'\s+', ' ', value.strip())
-            
-    #             if value and value != '-':
-    #                 lower_val = value.lower()
-    #                 # Reject known layout artifacts
-    #                 if lower_val in ['permanent', 'current', 'temporary', 'occupation', 'address']:
-    #                     continue
-    #                 # Reject exact label repetition
-    #                 field_label = field.replace('_name', '').replace('_', ' ').strip().lower()
-    #                 if lower_val == field_label:
-    #                     continue
-    #                 data[field] = value  
-                    
-    #     return data
+ 
     
     def _extract_occupation_info(self, text: str) -> Dict:
         """Extract occupation information"""
